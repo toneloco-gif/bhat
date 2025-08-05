@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOMO VIP Casino</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1f2937, #111827);
+        }
+        .text-glow {
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.7), 0 0 12px rgba(255, 255, 255, 0.5);
+        }
+        .btn-game {
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1-px rgba(0, 0, 0, 0.06);
+            border: 2px solid transparent;
+        }
+        .btn-game:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1), 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+        }
+        .card {
+            background-color: #f7fafc;
+            color: #1a202c;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 80px;
+            height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            font-weight: bold;
+            font-size: 1.5rem;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+        .card-back {
+            background-color: #a0aec0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a5568' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'%3E%3C/path%3E%3C/svg%3E");
+            background-size: 50%;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+        .card .suit-top, .card .suit-bottom {
+            font-size: 1.25rem;
+        }
+        .suit-red { color: #e53e3e; }
+        .suit-black { color: #1a202c; }
+        .slot-symbol {
+            transition: transform 0.3s ease-in-out;
+            animation: spin 0.5s infinite linear;
+        }
+        .slot-reel {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #0d121c;
+            border-radius: 12px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            border: 2px solid #374151;
+            margin: 0 4px;
+        }
+        .slot-spinning {
+            animation: none; /* Override infinite spin during a real spin */
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-10 flex flex-col items-center">
+        <!-- Game Title -->
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white text-center mb-6 tracking-wide text-glow">FOMO VIP Casino</h1>
+        
+        <!-- Game Status & Controls -->
+        <div class="flex flex-col md:flex-row items-center justify-between w-full mb-6 gap-4">
+            <div class="bg-gray-700 rounded-xl px-6 py-3 text-2xl font-bold flex-1 text-center w-full md:w-auto">
+                Credit: <span id="credit-display">25.00 Tokens</span>
+            </div>
+            <div class="flex-1 flex flex-wrap justify-center md:flex-nowrap gap-4 w-full md:w-auto">
+                <button id="slot-btn" class="btn-game bg-indigo-600 text-white font-bold py-3 px-6 rounded-full hover:bg-indigo-700">Slots</button>
+                <button id="blackjack-btn" class="btn-game bg-emerald-600 text-white font-bold py-3 px-6 rounded-full hover:bg-emerald-700">Blackjack</button>
+                <button id="cash-out-btn" class="btn-game bg-purple-500 text-white font-bold py-3 px-6 rounded-full hover:bg-purple-600">Cash Out</button>
+            </div>
+        </div>
+        
+        <!-- Game Container -->
+        <div id="game-container" class="w-full">
+            
+            <!-- Slots Section -->
+            <div id="slots-section" class="flex flex-col items-center gap-6">
+                <h2 class="text-3xl font-bold text-white mb-4">Slot Machine</h2>
+                
+                <div class="flex justify-center items-center gap-2 mb-4">
+                    <span class="text-xl font-semibold">Bet: <span id="slot-bet-display">1 Token</span></span>
+                    <button id="bet-minus-slot" class="btn-game bg-red-500 text-white font-bold py-1 px-3 rounded-full hover:bg-red-600">-</button>
+                    <button id="bet-plus-slot" class="btn-game bg-green-500 text-white font-bold py-1 px-3 rounded-full hover:bg-green-600">+</button>
+                </div>
+                
+                <div class="flex justify-center items-center gap-2">
+                    <div id="reel1" class="slot-reel text-6xl">🍋</div>
+                    <div id="reel2" class="slot-reel text-6xl">🍇</div>
+                    <div id="reel3" class="slot-reel text-6xl">🍉</div>
+                </div>
+                
+                <button id="spin-btn" class="btn-game bg-yellow-500 text-gray-900 font-bold text-2xl py-4 px-10 rounded-full mt-4 hover:bg-yellow-400">Spin</button>
+                
+                <p id="slot-message" class="text-xl text-center mt-4 h-8"></p>
+            </div>
+
+            <!-- Blackjack Section -->
+            <div id="blackjack-section" class="hidden flex-col items-center gap-6">
+                <h2 class="text-3xl font-bold text-white mb-4">Blackjack</h2>
+                
+                <div class="flex justify-center items-center gap-2 mb-4">
+                    <span class="text-xl font-semibold">Bet: <span id="blackjack-bet-display">1 Token</span></span>
+                    <button id="bet-minus-blackjack" class="btn-game bg-red-500 text-white font-bold py-1 px-3 rounded-full hover:bg-red-600">-</button>
+                    <button id="bet-plus-blackjack" class="btn-game bg-green-500 text-white font-bold py-1 px-3 rounded-full hover:bg-green-600">+</button>
+                </div>
+
+                <!-- Dealer's Hand -->
+                <div class="w-full text-center mb-4">
+                    <p class="text-xl font-semibold">Dealer's Hand: <span id="dealer-score">?</span></p>
+                    <div id="dealer-hand" class="flex justify-center items-center flex-wrap gap-2 mt-2"></div>
+                </div>
+
+                <!-- Player's Hand -->
+                <div class="w-full text-center">
+                    <p class="text-xl font-semibold">Your Hand: <span id="player-score">0</span></p>
+                    <div id="player-hand" class="flex justify-center items-center flex-wrap gap-2 mt-2"></div>
+                </div>
+                
+                <!-- Blackjack Action Buttons -->
+                <div id="blackjack-actions" class="flex gap-4 mt-6">
+                    <button id="deal-btn" class="btn-game bg-blue-500 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-600">Deal</button>
+                    <button id="hit-btn" class="btn-game bg-orange-500 text-white font-bold py-3 px-6 rounded-full hover:bg-orange-600 hidden">Hit</button>
+                    <button id="stand-btn" class="btn-game bg-teal-500 text-white font-bold py-3 px-6 rounded-full hover:bg-teal-600 hidden">Stand</button>
+                </div>
+                
+                <p id="blackjack-message" class="text-xl text-center mt-4 h-8"></p>
+            </div>
+            
+        </div>
+        
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50">
+            <div class="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 text-center max-w-sm w-full animate-pulse">
+                <h3 id="game-over-title" class="3xl font-extrabold mb-4 text-glow"></h3>
+                <p id="game-over-message" class="text-lg mb-6"></p>
+            </div>
+        </div>
+        
+        <!-- Cash Out Confirmation Modal -->
+        <div id="cash-out-confirm-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50">
+            <div class="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 text-center max-w-sm w-full">
+                <h3 class="text-3xl font-extrabold text-white mb-4 text-glow">Confirm Cash Out?</h3>
+                <p class="text-lg text-white mb-6">Are you sure?</p>
+                <div class="flex justify-center gap-4">
+                    <button id="confirm-cash-out-btn" class="btn-game bg-green-500 text-white font-bold py-3 px-6 rounded-full hover:bg-green-600">Confirm</button>
+                    <button id="cancel-cash-out-btn" class="btn-game bg-red-500 text-white font-bold py-3 px-6 rounded-full hover:bg-red-600">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="text-sm text-gray-400 mt-8 text-center">
+            <p>For entertainment purposes only. **No purchase necessary.**</p>
+        </div>
+
+    </div>
+
+    <script>
+        // Game State Variables
+        let credit = 25; // Starting credit is 25
+        let slotBet = 1;
+        let blackjackBet = 1;
+        let isSpinning = false;
+        let playerHand = [];
+        let dealerHand = [];
+        let deck = [];
+        let isPlayerTurn = false;
+        const uniqueId = generateUniqueId(); 
+
+        // UI Elements
+        const creditDisplay = document.getElementById('credit-display');
+        const slotSection = document.getElementById('slots-section');
+        const blackjackSection = document.getElementById('blackjack-section');
+        const slotBtn = document.getElementById('slot-btn');
+        const blackjackBtn = document.getElementById('blackjack-btn');
+        const cashOutBtn = document.getElementById('cash-out-btn');
+
+        // Slot Machine Elements
+        const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+        const spinBtn = document.getElementById('spin-btn');
+        const slotBetDisplay = document.getElementById('slot-bet-display');
+        const betPlusSlot = document.getElementById('bet-plus-slot');
+        const betMinusSlot = document.getElementById('bet-minus-slot');
+        const slotMessage = document.getElementById('slot-message');
+
+        // Blackjack Elements
+        const playerHandDiv = document.getElementById('player-hand');
+        const dealerHandDiv = document.getElementById('dealer-hand');
+        const playerScoreDisplay = document.getElementById('player-score');
+        const dealerScoreDisplay = document.getElementById('dealer-score');
+        const dealBtn = document.getElementById('deal-btn');
+        const hitBtn = document.getElementById('hit-btn');
+        const standBtn = document.getElementById('stand-btn');
+        const blackjackBetDisplay = document.getElementById('blackjack-bet-display');
+        const betPlusBlackjack = document.getElementById('bet-plus-blackjack');
+        const betMinusBlackjack = document.getElementById('bet-minus-blackjack');
+        const blackjackMessage = document.getElementById('blackjack-message');
+
+        // Game Over Elements
+        const gameOverModal = document.getElementById('game-over-modal');
+        const gameOverTitle = document.getElementById('game-over-title'); 
+        const gameOverMessage = document.getElementById('game-over-message'); 
+        
+        // Cash Out Confirmation Elements
+        const cashOutConfirmModal = document.getElementById('cash-out-confirm-modal');
+        const confirmCashOutBtn = document.getElementById('confirm-cash-out-btn');
+        const cancelCashOutBtn = document.getElementById('cancel-cash-out-btn');
+
+        // Symbols for the slot machine
+        const symbols = ['🍒', '🍋', '🍇', '🍉', '⭐', '💰'];
+
+        // Card suits and ranks
+        const suits = ['♥', '♦', '♣', '♠'];
+        const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+        // --- Utility Functions ---
+
+        /**
+         * Generates a unique 6-character alphanumeric identifier.
+         */
+        function generateUniqueId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        /**
+         * Disables or enables the game-related buttons.
+         * @param {boolean} disabled - True to disable, false to enable.
+         */
+        function disableGameButtons(disabled) {
+            spinBtn.disabled = disabled;
+            dealBtn.disabled = disabled;
+            hitBtn.disabled = disabled;
+            standBtn.disabled = disabled;
+            betPlusSlot.disabled = disabled;
+            betMinusSlot.disabled = disabled;
+            betPlusBlackjack.disabled = disabled;
+            betMinusBlackjack.disabled = disabled;
+            cashOutBtn.disabled = disabled;
+        }
+
+        /**
+         * Checks the game state and handles win/loss conditions.
+         */
+        function checkGameState() {
+            // No max winnings cap
+            if (credit <= 0) {
+                credit = 0; // Explicitly set credit to 0
+                showGameOverModal("Game Over", `Your credit has run out. Better luck next time!`); 
+                disableGameButtons(true);
+            } else {
+                disableGameButtons(false);
+            }
+            updateCreditDisplay();
+        }
+
+        /**
+         * Updates the credit display on the screen.
+         */
+        function updateCreditDisplay() {
+            creditDisplay.textContent = `${credit.toFixed(2)} Tokens`;
+        }
+
+        /**
+         * Shows the game over modal with a message.
+         * @param {string} title - The title of the modal.
+         * @param {string} message - The message to display.
+         */
+        function showGameOverModal(title, message) {
+            gameOverTitle.textContent = title;
+            gameOverMessage.innerHTML = message;
+            gameOverModal.classList.remove('hidden');
+        }
+
+        /**
+         * Closes the game over modal.
+         */
+        function hideGameOverModal() {
+            gameOverModal.classList.add('hidden');
+        }
+
+        /**
+         * Generates a new deck of cards and shuffles it.
+         */
+        function createDeck() {
+            deck = [];
+            for (let suit of suits) {
+                for (let rank of ranks) {
+                    deck.push({ rank, suit });
+                }
+            }
+            // Simple shuffle algorithm
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        /**
+         * Calculates the value of a hand in Blackjack.
+         * @param {Array} hand - The array of cards in the hand.
+         * @param {boolean} isDealerFirstCardHidden - True if the dealer's first card is hidden.
+         * @returns {number} The calculated score.
+         */
+        function getHandValue(hand, isDealerFirstCardHidden = false) {
+            let value = 0;
+            let aces = 0;
+            let startIndex = isDealerFirstCardHidden ? 1 : 0;
+            for (let i = startIndex; i < hand.length; i++) {
+                const card = hand[i];
+                if (card.rank === 'A') {
+                    aces++;
+                    value += 11;
+                } else if (['K', 'Q', 'J'].includes(card.rank)) {
+                    value += 10;
+                } else {
+                    value += parseInt(card.rank);
+                }
+            }
+            while (value > 21 && aces > 0) {
+                value -= 10;
+                aces--;
+            }
+            return value;
+        }
+
+        /**
+         * Renders a card on the screen.
+         * @param {Object} card - The card object with rank and suit.
+         * @param {HTMLElement} parentElement - The parent element to append the card to.
+         * @param {boolean} isHidden - True if the card should be face down.
+         */
+        function renderCard(card, parentElement, isHidden = false) {
+            const cardDiv = document.createElement('div');
+            cardDiv.classList.add('card');
+            
+            const cardInner = document.createElement('div');
+            cardInner.classList.add('card-inner');
+            
+            const cardFront = document.createElement('div');
+            cardFront.classList.add('card-front');
+            const suitColor = (card.suit === '♥' || card.suit === '♦') ? 'suit-red' : 'suit-black';
+            
+            cardFront.innerHTML = `
+                <div class="flex flex-col items-center suit-top">
+                    <span class="font-bold">${card.rank}</span>
+                    <span class="${suitColor}">${card.suit}</span>
+                </div>
+                <div class="flex flex-col items-center suit-bottom">
+                    <span class="${suitColor}">${card.suit}</span>
+                    <span class="font-bold">${card.rank}</span>
+                </div>
+            `;
+
+            const cardBack = document.createElement('div');
+            cardBack.classList.add('card-back');
+
+            cardInner.appendChild(cardFront);
+            cardInner.appendChild(cardBack);
+            cardDiv.appendChild(cardInner);
+            
+            if (isHidden) {
+                cardDiv.classList.add('flipped');
+            }
+            
+            parentElement.appendChild(cardDiv);
+        }
+        
+        /**
+         * Sets the "has played" flag in local storage to prevent multiple attempts.
+         */
+        function setPlayedFlag() {
+            localStorage.setItem('hasPlayed', 'true');
+        }
+        
+        /**
+         * Checks local storage to see if the user has already played.
+         */
+        function checkAttemptStatus() {
+            if (localStorage.getItem('hasPlayed') === 'true') {
+                // Hide the main app content and show only the message box
+                document.getElementById('app').classList.add('hidden');
+                document.body.innerHTML = ''; // Clear body content
+                document.body.appendChild(createMessageBox()); // Append only the message box
+            }
+        }
+
+        // Function to create the message box element dynamically
+        function createMessageBox() {
+            const messageBoxDiv = document.createElement('div');
+            messageBoxDiv.id = 'message-box';
+            messageBoxDiv.className = 'fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50';
+            messageBoxDiv.innerHTML = `
+                <div class="bg-red-800 p-8 rounded-2xl shadow-xl border border-red-700 text-center max-w-sm w-full">
+                    <h3 class="text-3xl font-extrabold text-white mb-4 text-glow">Too many attempts!</h3>
+                    <p class="text-lg text-white mb-6">You have already played this game once.</p>
+                </div>
+            `;
+            return messageBoxDiv;
+        }
+
+
+        // --- Event Listeners ---
+
+        // Switch between games
+        slotBtn.addEventListener('click', () => {
+            slotSection.classList.remove('hidden');
+            slotSection.classList.add('flex');
+            blackjackSection.classList.add('hidden');
+            blackjackSection.classList.remove('flex');
+        });
+
+        blackjackBtn.addEventListener('click', () => {
+            blackjackSection.classList.remove('hidden');
+            blackjackSection.classList.add('flex');
+            slotSection.classList.add('hidden');
+            slotSection.classList.remove('flex');
+        });
+
+        // Cash out logic - now shows confirmation modal
+        cashOutBtn.addEventListener('click', () => {
+            cashOutConfirmModal.classList.remove('hidden');
+        });
+
+        // Confirm Cash Out from modal
+        confirmCashOutBtn.addEventListener('click', () => {
+            cashOutConfirmModal.classList.add('hidden'); // Hide confirmation modal
+            setPlayedFlag(); // Set the flag on confirmation
+
+            // Cash out amount is current credit, no cap
+            showGameOverModal("Cash Out Successful!", `You have cashed out with ${credit.toFixed(2)} Tokens! Thanks for playing!`); 
+            disableGameButtons(true);
+            credit = 0;
+            updateCreditDisplay();
+        });
+
+        // Cancel Cash Out from modal
+        cancelCashOutBtn.addEventListener('click', () => {
+            cashOutConfirmModal.classList.add('hidden'); // Hide confirmation modal
+        });
+
+
+        // Slot Machine Logic
+        betPlusSlot.addEventListener('click', () => {
+            // Max bet is 25
+            if (slotBet < credit && slotBet < 25) { 
+                slotBet++;
+                slotBetDisplay.textContent = `${slotBet} Token`;
+            }
+        });
+
+        betMinusSlot.addEventListener('click', () => {
+            if (slotBet > 1) {
+                slotBet--;
+                slotBetDisplay.textContent = `${slotBet} Token`;
+            }
+        });
+
+        spinBtn.addEventListener('click', () => {
+            if (isSpinning || credit < slotBet) {
+                slotMessage.textContent = credit < slotBet ? 'Not enough credit to bet.' : '';
+                return;
+            }
+            isSpinning = true;
+            spinBtn.disabled = true;
+            slotMessage.textContent = '';
+            credit -= slotBet;
+
+            const result = [];
+            let spinCount = 0;
+            const spinInterval = setInterval(() => {
+                reels.forEach((reel, index) => {
+                    const newSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+                    if (spinCount < 10) {
+                        reel.textContent = newSymbol;
+                        reel.classList.add('slot-symbol');
+                    } else if (spinCount === 10) {
+                        reel.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                        result[index] = reel.textContent;
+                        reel.classList.remove('slot-symbol');
+                    }
+                });
+                spinCount++;
+                if (spinCount > 10) {
+                    clearInterval(spinInterval);
+                    checkSlotResult(result);
+                }
+            }, 100);
+        });
+        
+        /**
+         * Checks the slot machine result and updates the credit.
+         * @param {Array} result - The array of symbols on the reels.
+         */
+        function checkSlotResult(result) {
+            let winAmount = 0;
+            let message = "You lose!";
+
+            if (result[0] === result[1] && result[1] === result[2]) {
+                winAmount = slotBet * 10;
+                message = "JACKPOT! Three of a kind!";
+            } else if (result[0] === result[1] || result[1] === result[2]) {
+                winAmount = slotBet * 2;
+                message = "Two of a kind! You win!";
+            }
+            
+            credit += winAmount;
+            slotMessage.textContent = message;
+            checkGameState();
+
+            isSpinning = false;
+            spinBtn.disabled = false;
+        }
+
+        // Blackjack Logic
+        betPlusBlackjack.addEventListener('click', () => {
+            // Max bet is 25
+            if (blackjackBet < credit && blackjackBet < 25) {
+                blackjackBet++;
+                blackjackBetDisplay.textContent = `${blackjackBet} Token`;
+            }
+        });
+
+        betMinusBlackjack.addEventListener('click', () => {
+            if (blackjackBet > 1) {
+                blackjackBet--;
+                blackjackBetDisplay.textContent = `${blackjackBet} Token`;
+            }
+        });
+
+        dealBtn.addEventListener('click', () => {
+            if (credit < blackjackBet) {
+                blackjackMessage.textContent = 'Not enough credit to bet.';
+                return;
+            }
+            
+            // Reset game state
+            playerHand = [];
+            dealerHand = [];
+            createDeck();
+            blackjackMessage.textContent = '';
+            
+            // Clear cards from previous game
+            playerHandDiv.innerHTML = '';
+            dealerHandDiv.innerHTML = '';
+
+            credit -= blackjackBet;
+            
+            isPlayerTurn = true;
+
+            // Deal initial cards
+            playerHand.push(deck.pop());
+            dealerHand.push(deck.pop());
+            playerHand.push(deck.pop());
+            dealerHand.push(deck.pop());
+
+            // Render cards
+            renderCard(playerHand[0], playerHandDiv);
+            renderCard(playerHand[1], playerHandDiv);
+            renderCard(dealerHand[0], dealerHandDiv, true); // Dealer's first card is hidden
+            renderCard(dealerHand[1], dealerHandDiv);
+
+            // Update scores
+            playerScoreDisplay.textContent = getHandValue(playerHand);
+            dealerScoreDisplay.textContent = getHandValue(dealerHand, true);
+
+            // Show action buttons
+            dealBtn.classList.add('hidden');
+            hitBtn.classList.remove('hidden');
+            standBtn.classList.remove('hidden');
+
+            if (getHandValue(playerHand) === 21) {
+                blackjackMessage.textContent = 'Blackjack!';
+                isPlayerTurn = false;
+                setTimeout(dealerTurn, 1000);
+            }
+        });
+
+        hitBtn.addEventListener('click', () => {
+            if (!isPlayerTurn) return;
+            playerHand.push(deck.pop());
+            renderCard(playerHand[playerHand.length - 1], playerHandDiv);
+            playerScoreDisplay.textContent = getHandValue(playerHand);
+            
+            if (getHandValue(playerHand) > 21) {
+                blackjackMessage.textContent = 'Bust! You lose.';
+                isPlayerTurn = false;
+                endBlackjackGame();
+            }
+        });
+
+        standBtn.addEventListener('click', () => {
+            if (!isPlayerTurn) return;
+            isPlayerTurn = false;
+            dealerTurn();
+        });
+
+        /**
+         * Logic for the dealer's turn in Blackjack.
+         */
+        function dealerTurn() {
+            // Flip the dealer's first card
+            dealerHandDiv.firstElementChild.classList.remove('flipped');
+            dealerScoreDisplay.textContent = getHandValue(dealerHand);
+
+            const dealerInterval = setInterval(() => {
+                if (getHandValue(dealerHand) < 17) {
+                    dealerHand.push(deck.pop());
+                    renderCard(dealerHand[dealerHand.length - 1], dealerHandDiv);
+                    dealerScoreDisplay.textContent = getHandValue(dealerHand);
+                } else {
+                    clearInterval(dealerInterval);
+                    endBlackjackGame();
+                }
+            }, 1000);
+        }
+        
+        /**
+         * Ends the Blackjack game, determines the winner, and updates credit.
+         */
+        function endBlackjackGame() {
+            dealBtn.classList.remove('hidden');
+            hitBtn.classList.add('hidden');
+            standBtn.classList.add('hidden');
+
+            const playerScore = getHandValue(playerHand);
+            const dealerScore = getHandValue(dealerHand);
+
+            if (playerScore > 21) {
+                // Player already busted, message already shown
+            } else if (dealerScore > 21) {
+                blackjackMessage.textContent = 'Dealer busts! You win!';
+                credit += blackjackBet * 2;
+            } else if (playerScore > dealerScore) {
+                blackjackMessage.textContent = 'You win!';
+                credit += blackjackBet * 2;
+            } else if (dealerScore > playerScore) {
+                blackjackMessage.textContent = 'Dealer wins!';
+            } else {
+                blackjackMessage.textContent = 'Push!'; // It's a tie
+                credit += blackjackBet;
+            }
+            checkGameState();
+        }
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAttemptStatus();
+            // Initial check for credit on page load (no cap check here)
+            checkGameState(); 
+            // Start on slots section by default
+            slotBtn.click();
+        });
+
+    </script>
+</body>
+</html>
