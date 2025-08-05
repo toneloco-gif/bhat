@@ -185,6 +185,7 @@
             <div class="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 text-center max-w-sm w-full animate-pulse">
                 <h3 id="game-over-title" class="3xl font-extrabold mb-4 text-glow"></h3>
                 <p id="game-over-message" class="text-lg mb-6"></p>
+                <button id="play-again-btn" class="btn-game bg-yellow-500 text-gray-900 font-bold py-3 px-8 rounded-full hover:bg-yellow-400 text-lg mt-4">Play Again</button>
             </div>
         </div>
         
@@ -192,7 +193,7 @@
         <div id="cash-out-confirm-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50">
             <div class="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 text-center max-w-sm w-full">
                 <h3 class="text-3xl font-extrabold text-white mb-4 text-glow">Confirm Cash Out?</h3>
-                <p class="text-lg text-white mb-6">Are you sure?</p>
+                <p class="text-lg text-white mb-6">Are you sure? This will not equate to any monetary redemption but act as a potential score to rank yourself among peers.</p>
                 <div class="flex justify-center gap-4">
                     <button id="confirm-cash-out-btn" class="btn-game bg-green-500 text-white font-bold py-3 px-6 rounded-full hover:bg-green-600">Confirm</button>
                     <button id="cancel-cash-out-btn" class="btn-game bg-red-500 text-white font-bold py-3 px-6 rounded-full hover:bg-red-600">Cancel</button>
@@ -252,11 +253,12 @@
         const gameOverModal = document.getElementById('game-over-modal');
         const gameOverTitle = document.getElementById('game-over-title'); 
         const gameOverMessage = document.getElementById('game-over-message'); 
+        const playAgainBtn = document.getElementById('play-again-btn'); // New element for Play Again button
         
         // Cash Out Confirmation Elements
         const cashOutConfirmModal = document.getElementById('cash-out-confirm-modal');
         const confirmCashOutBtn = document.getElementById('confirm-cash-out-btn');
-        const cancelCashOutBtn = document.getElementById('cancel-cash-out-btn');
+        const cancelCashOutBtn = document = document.getElementById('cancel-cash-out-btn');
 
         // Symbols for the slot machine
         const symbols = ['🍒', '🍋', '🍇', '🍉', '⭐', '💰'];
@@ -329,6 +331,32 @@
         function hideGameOverModal() {
             gameOverModal.classList.add('hidden');
         }
+
+        /**
+         * Resets the game to its initial state.
+         */
+        function resetGame() {
+            credit = 25; // Reset to starting credit
+            slotBet = 1;
+            blackjackBet = 1;
+            isSpinning = false;
+            playerHand = [];
+            dealerHand = [];
+            deck = [];
+            isPlayerTurn = false;
+            
+            slotMessage.textContent = '';
+            blackjackMessage.textContent = '';
+            playerHandDiv.innerHTML = '';
+            dealerHandDiv.innerHTML = '';
+            playerScoreDisplay.textContent = '0';
+            dealerScoreDisplay.textContent = '?';
+
+            hideGameOverModal(); // Hide the game over modal
+            checkGameState(); // Re-enable buttons and update display
+            slotBtn.click(); // Go back to slots by default
+        }
+
 
         /**
          * Generates a new deck of cards and shuffles it.
@@ -417,41 +445,11 @@
             parentElement.appendChild(cardDiv);
         }
         
-        /**
-         * Sets the "has played" flag in local storage to prevent multiple attempts.
-         */
-        function setPlayedFlag() {
-            localStorage.setItem('hasPlayed', 'true');
-        }
-        
-        /**
-         * Checks local storage to see if the user has already played.
-         */
-        function checkAttemptStatus() {
-            if (localStorage.getItem('hasPlayed') === 'true') {
-                // Hide the main app content and show only the message box
-                document.getElementById('app').classList.add('hidden');
-                document.body.innerHTML = ''; // Clear body content
-                document.body.appendChild(createMessageBox()); // Append only the message box
-            }
-        }
-
-        // Function to create the message box element dynamically
-        function createMessageBox() {
-            const messageBoxDiv = document.createElement('div');
-            messageBoxDiv.id = 'message-box';
-            messageBoxDiv.className = 'fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center p-4 z-50';
-            messageBoxDiv.innerHTML = `
-                <div class="bg-red-800 p-8 rounded-2xl shadow-xl border border-red-700 text-center max-w-sm w-full">
-                    <h3 class="text-3xl font-extrabold text-white mb-4 text-glow">Too many attempts!</h3>
-                    <p class="text-lg text-white mb-6">You have already played this game once.</p>
-                </div>
-            `;
-            return messageBoxDiv;
-        }
-
-
         // --- Event Listeners ---
+
+        // Play Again button
+        playAgainBtn.addEventListener('click', resetGame);
+
 
         // Switch between games
         slotBtn.addEventListener('click', () => {
@@ -476,7 +474,7 @@
         // Confirm Cash Out from modal
         confirmCashOutBtn.addEventListener('click', () => {
             cashOutConfirmModal.classList.add('hidden'); // Hide confirmation modal
-            setPlayedFlag(); // Set the flag on confirmation
+            // No setPlayedFlag() here as this version has no attempt limit
 
             // Cash out amount is current credit, no cap
             showGameOverModal("Cash Out Successful!", `You have cashed out with ${credit.toFixed(2)} Tokens! Thanks for playing!`); 
@@ -696,7 +694,7 @@
 
         // Initial setup on page load
         document.addEventListener('DOMContentLoaded', () => {
-            checkAttemptStatus();
+            // No checkAttemptStatus() here as this version has no attempt limit
             // Initial check for credit on page load (no cap check here)
             checkGameState(); 
             // Start on slots section by default
